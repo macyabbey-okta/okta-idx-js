@@ -1,3 +1,21 @@
+# 0.21.0
+
+### Features
+
+- [#74](https://github.com/okta/okta-idx-js/pull/74) Introspect accepts stateTokenExternalId
+
+# 0.20.0
+
+### Features
+
+- [#66](https://github.com/okta/okta-idx-js/pull/66) Errors are formatted as IDX response
+
+# 0.19.0
+
+### Features
+
+- [#58](https://github.com/okta/okta-idx-js/pull/58) Includes credentials on all requests
+
 # 0.18.0
 
 ### Other

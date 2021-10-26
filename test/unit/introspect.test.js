@@ -100,4 +100,14 @@ describe('introspect', () => {
       });
   });
 
+  it('passes along `stateTokenExternalId` if it was provided', () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockIdxResponse )) ) );
+    const stateTokenExternalId = 'abc';
+    return introspect({ domain, stateHandle, version, stateTokenExternalId })
+      .then( result => {
+        expect(result).toEqual(mockIdxResponse);
+        expect( fetch.mock.calls[0][1].body ).toEqual('{"stateToken":"FAKEY-FAKE","stateTokenExternalId":"abc"}');
+      });
+  });
+
 });

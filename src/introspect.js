@@ -15,9 +15,12 @@ import { request } from './client';
 
 const parseAndReject = response => response.json().then( err => Promise.reject(err) );
 
-const introspect = async function introspect({ domain, interactionHandle, stateHandle, version }) {
+const introspect = async function introspect({ domain, interactionHandle, stateHandle, version, stateTokenExternalId }) {
   const target = `${domain}/idp/idx/introspect`;
   const body = stateHandle ? { stateToken: stateHandle } : { interactionHandle };
+  if (stateTokenExternalId) {
+    body.stateTokenExternalId = stateTokenExternalId;
+  }
   const headers = {
     'content-type': `application/ion+json; okta-version=${version}`, // Server wants this version info
     accept: `application/ion+json; okta-version=${version}`,
