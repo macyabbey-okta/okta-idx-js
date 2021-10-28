@@ -1,3 +1,7 @@
+# 0.22.0
+
+- [#75](https://github.com/okta/okta-idx-js/pull/75) Start accepts stateTokenExternalId
+
 # 0.21.0
 
 ### Features
