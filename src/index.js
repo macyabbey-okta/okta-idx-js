@@ -30,7 +30,8 @@ const start = async function start({
   scopes,
   codeChallenge,
   codeChallengeMethod,
-  stateTokenExternalId
+  stateTokenExternalId,
+  activationToken
 }) {
 
   issuer = issuer?.replace(/\/+$/, '');
@@ -79,7 +80,8 @@ const start = async function start({
         redirectUri,
         codeChallenge,
         codeChallengeMethod,
-        state
+        state,
+        activationToken
       };
 
       const interaction_handle = await bootstrap( bootstrapParams );

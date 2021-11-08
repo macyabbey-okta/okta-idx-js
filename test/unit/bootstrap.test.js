@@ -66,5 +66,15 @@ describe('bootstrap', () => {
         });
       });
   });
+
+  it('passes along `activationToken` if it was provided', () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+    return bootstrap({ ...mockConfig, scope: 'openid email', activationToken: 'xxxACTIVATIONTOKENxxx' })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
+        expect( fetch.mock.calls[0][1].body ).toEqual('client_id=CLIENT_ID&scope=openid%20email&redirect_uri=redirect%3A%2F%2F&code_challenge=foo&code_challenge_method=method&state=undefined&activation_token=xxxACTIVATIONTOKENxxx');
+      });
+  });
 });
 

@@ -23,17 +23,22 @@ const bootstrap = async function bootstrap({
   codeChallenge,
   codeChallengeMethod,
   state,
+  activationToken,
 }) {
 
   const target = `${baseUrl}/v1/interact`;
-  const body = Object.entries({
+  const params = {
     client_id: clientId,
     scope: scopes.join(' '),
     redirect_uri: redirectUri,
     code_challenge: codeChallenge,
     code_challenge_method: codeChallengeMethod,
     state,
-  })
+  };
+  if (activationToken) {
+    params.activation_token = activationToken;
+  }
+  const body = Object.entries(params)
     .map( ([param, value]) => `${param}=${encodeURIComponent(value)}` )
     .join('&');
   const headers = {

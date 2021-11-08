@@ -1,3 +1,7 @@
+# 0.23.0
+
+- [#76](https://github.com/okta/okta-idx-js/pull/76) Bootstrap accepts activationToken
+
 # 0.22.0
 
 - [#75](https://github.com/okta/okta-idx-js/pull/75) Start accepts stateTokenExternalId

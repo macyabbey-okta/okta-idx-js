@@ -83,6 +83,7 @@ Configuration params:
 - **codeChallengeMethod**: (required) The method used to generate the hash of the PKCE code challenge.  Per PKCE spec, this is currently 'S256'
 - **scopes**: (optional) Specify what information to make available in the returned tokens by providing an array of strings with known meaning as an OIDC scope.  Defaults to ['openid', 'email'].
 - **interactionHandle**: (optional) The current interactionHandle of a customer-hosted flow in-progress.  New flows will not have an existing handle and should not try to pass this value.
+- **activationToken**: (optional) Activation token to support admin triggered user creation and activation flow.
 
 `idx.start()` is called anytime you don't have an idxState object (such as after a browser full-page redirect) and will resume any OIE flow in-progress based on the passed **interactionHandle** (customer-hosted)
 
