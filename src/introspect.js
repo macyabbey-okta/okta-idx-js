@@ -12,21 +12,26 @@
 
 
 import { request } from './client';
+import { validateVersionConfig } from './util';
 
 const parseAndReject = response => response.json().then( err => Promise.reject(err) );
 
-const introspect = async function introspect({ domain, interactionHandle, stateHandle, version, stateTokenExternalId }) {
+const introspect = async function introspect({
+  withCredentials,
+  domain,
+  interactionHandle,
+  stateHandle,
+  version,
+}) {
+  validateVersionConfig(version);
   const target = `${domain}/idp/idx/introspect`;
   const body = stateHandle ? { stateToken: stateHandle } : { interactionHandle };
-  if (stateTokenExternalId) {
-    body.stateTokenExternalId = stateTokenExternalId;
-  }
   const headers = {
     'content-type': `application/ion+json; okta-version=${version}`, // Server wants this version info
     accept: `application/ion+json; okta-version=${version}`,
   };
-
-  return request(target, { headers, body: JSON.stringify(body) })
+  const credentials = withCredentials === false ? 'omit' : 'include';
+  return request(target, { credentials, headers, body: JSON.stringify(body) })
     .then( response => response.ok ? response.json() : parseAndReject( response ) );
 };
 

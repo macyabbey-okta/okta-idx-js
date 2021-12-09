@@ -15,7 +15,8 @@ import { request } from './client';
 
 const parseAndReject = response => response.json().then( err => Promise.reject(err) );
 
-const bootstrap = async function bootstrap({
+const interact = async function interact({
+  withCredentials,
   clientId,
   baseUrl,
   scopes = ['openid', 'email'],
@@ -24,6 +25,7 @@ const bootstrap = async function bootstrap({
   codeChallengeMethod,
   state,
   activationToken,
+  recoveryToken,
 }) {
 
   const target = `${baseUrl}/v1/interact`;
@@ -38,16 +40,19 @@ const bootstrap = async function bootstrap({
   if (activationToken) {
     params.activation_token = activationToken;
   }
+  if (recoveryToken) {
+    params.recovery_token = recoveryToken;
+  }
   const body = Object.entries(params)
     .map( ([param, value]) => `${param}=${encodeURIComponent(value)}` )
     .join('&');
   const headers = {
     'content-type': 'application/x-www-form-urlencoded',
   };
-
-  return request(target, { headers, body })
+  const credentials = withCredentials === false ? 'omit' : 'include';
+  return request(target, { credentials, headers, body })
     .then( response => response.ok ? response.json() : parseAndReject( response ) )
     .then( data => data.interaction_handle);
 };
 
-export default bootstrap;
+export default interact;

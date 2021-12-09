@@ -12,13 +12,15 @@
 
 
 import introspect from './introspect';
-import bootstrap from './bootstrap';
+import interact from './interact';
 import parsersForVersion from './parsers';
 import { HttpClient } from './client';
+import { validateVersionConfig } from './util';
 
 const LATEST_SUPPORTED_IDX_API_VERSION = '1.0.0';
 
 const start = async function start({
+  withCredentials,
   clientId,
   domain,
   issuer,
@@ -30,8 +32,8 @@ const start = async function start({
   scopes,
   codeChallenge,
   codeChallengeMethod,
-  stateTokenExternalId,
-  activationToken
+  activationToken,
+  recoveryToken
 }) {
 
   issuer = issuer?.replace(/\/+$/, '');
@@ -40,6 +42,7 @@ const start = async function start({
     baseUrl,
     clientId,
     state,
+    withCredentials
   };
 
   if ( !domain && !issuer) {
@@ -62,18 +65,12 @@ const start = async function start({
     domain = new URL(issuer).origin;
   }
 
-  if ( !version ) {
-    return Promise.reject({ error: 'version is required' });
-  }
-
-  const cleanVersion = (version ?? '').replace(/[^0-9a-zA-Z._-]/, '');
-  if ( cleanVersion !== version || !version ) {
-    return Promise.reject({ error: 'invalid version supplied - version is required and uses semver syntax'});
-  }
+  validateVersionConfig(version);
 
   if ( !stateHandle && !interactionHandle ) { // start a new transaction
     try {
-      const bootstrapParams = {
+      const interactParams = {
+        withCredentials,
         clientId,
         baseUrl,
         scopes,
@@ -81,10 +78,11 @@ const start = async function start({
         codeChallenge,
         codeChallengeMethod,
         state,
-        activationToken
+        activationToken,
+        recoveryToken
       };
 
-      const interaction_handle = await bootstrap( bootstrapParams );
+      const interaction_handle = await interact( interactParams );
       interactionHandle = interaction_handle;
       toPersist.interactionHandle = interactionHandle;
     } catch (error) {
@@ -94,7 +92,7 @@ const start = async function start({
 
   try {
     const { makeIdxState } = parsersForVersion(version);
-    const idxResponse = await introspect({ domain, interactionHandle, stateHandle, version, stateTokenExternalId })
+    const idxResponse = await introspect({ withCredentials, domain, interactionHandle, stateHandle, version })
       .catch( err => Promise.reject({
         error: 'introspect call failed',
         // Transform all errors into an IdX State object.
@@ -112,7 +110,7 @@ const { makeIdxState } = parsersForVersion(LATEST_SUPPORTED_IDX_API_VERSION);
 export default {
   start,
   introspect,
-  interact: bootstrap,
+  interact,
   makeIdxState,
   client: HttpClient,
   LATEST_SUPPORTED_IDX_API_VERSION,

@@ -66,6 +66,28 @@ describe('generateIdxAction', () => {
       });
   });
 
+  it('if toPersist.withCredentials is false, it will set credentials to "omit"', async () => {
+    fetch.mockImplementationOnce( () => mockResponse( mockIdxResponse ));
+    makeIdxState.mockReturnValue('mock IdxState');
+    const actionFunction = generateIdxAction(mockIdxResponse.remediation.value[0], { withCredentials: false });
+    return actionFunction()
+      .then( result => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'https://dev-550580.okta.com/idp/idx/identify' );
+        expect( fetch.mock.calls[0][1] ).toEqual( {
+          body: '{"stateHandle":"02Yi84bXNZ3STdPKisJIV0vQ7pY4hkyFHs6a9c12Fw"}',
+          credentials: 'omit',
+          headers: {
+            'content-type': 'application/json',
+            'accept': 'application/ion+json; okta-version=1.0.0',
+            'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+          },
+          method: 'POST'
+        });
+        expect( result ).toBe('mock IdxState');
+      });
+  });
+
   it('handles the status code for Okta device authentication', async () => {
     fetch.mockImplementationOnce( () => Promise.resolve( new Response(
       JSON.stringify( mockIdxResponse ),

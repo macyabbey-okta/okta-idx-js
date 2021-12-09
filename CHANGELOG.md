@@ -1,6 +1,10 @@
+# 0.24.0
+
+- [#77](https://github.com/okta/okta-idx-js/pull/77) Adds parameter `withCredentials`. Interact accepts recoveryToken
+
 # 0.23.0
 
-- [#76](https://github.com/okta/okta-idx-js/pull/76) Bootstrap accepts activationToken
+- [#76](https://github.com/okta/okta-idx-js/pull/76) Interact accepts activationToken
 
 # 0.22.0
 

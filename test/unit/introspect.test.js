@@ -37,6 +37,44 @@ describe('introspect', () => {
       });
   });
 
+  it('by default, sends credentials on the request', () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockIdxResponse )) ) );
+    return introspect({ domain, stateHandle, version })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/idp/idx/introspect' );
+        expect( fetch.mock.calls[0][1] ).toEqual( {
+          body: '{"stateToken":"FAKEY-FAKE"}',
+          credentials: 'include', // what we are testing
+          headers: {
+            'content-type': 'application/ion+json; okta-version=1.0.0',
+            'accept': 'application/ion+json; okta-version=1.0.0',
+            'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+          },
+          method: 'POST'
+        });
+      });
+  });
+
+  it('can omit credentials by setting withCredentials to false', async () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockIdxResponse )) ) );
+    return introspect({ domain, stateHandle, version, withCredentials: false })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/idp/idx/introspect' );
+        expect( fetch.mock.calls[0][1] ).toEqual( {
+          body: '{"stateToken":"FAKEY-FAKE"}',
+          credentials: 'omit', // what we are testing
+          headers: {
+            'content-type': 'application/ion+json; okta-version=1.0.0',
+            'accept': 'application/ion+json; okta-version=1.0.0',
+            'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+          },
+          method: 'POST'
+        });
+      });
+  });
+
   it('rejects if the idxResponse is an error', async () => {
     fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockErrorResponse ), { status: 500 }) ) );
     return introspect({ domain, stateHandle, version })
@@ -97,16 +135,6 @@ describe('introspect', () => {
           },
           method: 'POST'
         });
-      });
-  });
-
-  it('passes along `stateTokenExternalId` if it was provided', () => {
-    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockIdxResponse )) ) );
-    const stateTokenExternalId = 'abc';
-    return introspect({ domain, stateHandle, version, stateTokenExternalId })
-      .then( result => {
-        expect(result).toEqual(mockIdxResponse);
-        expect( fetch.mock.calls[0][1].body ).toEqual('{"stateToken":"FAKEY-FAKE","stateTokenExternalId":"abc"}');
       });
   });
 

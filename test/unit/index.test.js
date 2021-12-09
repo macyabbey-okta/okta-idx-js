@@ -12,36 +12,61 @@
 
 
 import idx from '../../src/index';
-//  We must import before webpack to be able to mock
-//  Integration tests will run against webpacked code
 
-// Note: All network interactions should be mocked
-// All stateHandles and similar are fake
-// See the integration tests for the full back-and-forth
+jest.mock('cross-fetch', () => jest.fn());
+jest.mock('../../src/interact', () => jest.fn());
+jest.mock('../../src/introspect', () => jest.fn());
+jest.mock('../../src/parsers', function() {
+  const makeIdxState = jest.fn();
+  return jest.fn().mockReturnValue({
+    makeIdxState
+  });
+});
+const mocked = {
+  fetch: require('cross-fetch'),
+  interact: require('../../src/interact'),
+  introspect: require('../../src/introspect'),
+  parsersForVersion: require('../../src/parsers')
+};
 
-jest.mock('cross-fetch');
-import fetch from 'cross-fetch'; // import to target for mockery
 const mockRequestIdentity = require('../mocks/request-identifier');
 const mockErrorResponse = require('../mocks/error-response');
 const mockAuthenticatorErrorResponse = require('../mocks/error-authenticator-enroll');
 const { Response } = jest.requireActual('cross-fetch');
 
-fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockRequestIdentity )) ) );
-
-const stateHandle = 'FAKE_STATE_HANDLE';
-const domain = 'http://okta.example.com';
-const orgIssuer = 'http://okta.example.com';
-const customIssuer = 'http://okta.example.com/oauth2/default';
-const version = '1.0.0';
-const clientId = 'CLIENT_ID';
-const redirectUri = 'https://example.com/fake';
-const codeChallenge = 'BASE64URLENCODED';
-const codeChallengeMethod = 'S256';
-
 describe('idx-js', () => {
+  let testContext;
+
+  beforeEach(() => {
+    const makeIdxState = mocked.makeIdxState = jest.fn();
+    mocked.parsersForVersion.mockReturnValue({ makeIdxState });
+    mocked.makeIdxState.mockImplementation((idxResponse, toPersist) => {
+      return { rawIdxState: idxResponse, toPersist };
+    });
+    mocked.fetch.mockResolvedValue(new Response(JSON.stringify( mockRequestIdentity )));
+    mocked.introspect.mockResolvedValue();
+    mocked.interact.mockResolvedValue();
+
+    testContext = {
+      activationToken: 'FAke_actiovation_token',
+      recoveryToken: 'FAKE_RECOVERY_TOKEN',
+      interactionHandle: 'FAKE_INTERACTION_HANDLE',
+      stateHandle: 'FAKE_STATE_HANDLE',
+      domain: 'http://okta.example.com',
+      orgIssuer: 'http://okta.example.com',
+      customIssuer: 'http://okta.example.com/oauth2/default',
+      version: '1.0.0',
+      clientId: 'CLIENT_ID',
+      redirectUri: 'https://example.com/fake',
+      codeChallenge: 'BASE64URLENCODED',
+      codeChallengeMethod: 'S256',
+    };
+  });
+
   describe('start', () => {
 
     it('requires a clientId when there is no stateHandle', async () => {
+      const { domain, version, redirectUri } = testContext;
       return idx.start({ domain, version, redirectUri })
         .then( () => {
           fail('expected idx.start to reject without one of: clientId, stateHandle');
@@ -52,6 +77,7 @@ describe('idx-js', () => {
     });
 
     it('requires a redirectUri when there is no stateHandle', async () => {
+      const { domain, version, clientId } = testContext;
       return idx.start({ domain, clientId, version })
         .then( () => {
           fail('expected idx.start to reject without one of: redirectUri, stateHandle');
@@ -62,6 +88,7 @@ describe('idx-js', () => {
     });
 
     it('requires PKCE attributes when there is no stateHandle', async () => {
+      const { domain, version, redirectUri, clientId } = testContext;
       return idx.start({ domain, clientId, version, redirectUri })
         .then( () => {
           fail('expected idx.start to reject without PKCE params if no stateHandle');
@@ -72,6 +99,7 @@ describe('idx-js', () => {
     });
 
     it('handles updating the baseUrl for an org authorization server issuer', async () => {
+      const { clientId, orgIssuer, codeChallenge, codeChallengeMethod, version, redirectUri } = testContext;
       return idx.start({ issuer: `${orgIssuer}`, clientId, version, redirectUri, codeChallenge, codeChallengeMethod })
         .then( idxState => {
           expect(idxState.toPersist.baseUrl).toEqual('http://okta.example.com/oauth2');
@@ -79,6 +107,7 @@ describe('idx-js', () => {
     });
 
     it('accepts the baseUrl from a custom authorization server issuer', async () => {
+      const { clientId, customIssuer, codeChallenge, codeChallengeMethod, version, redirectUri } = testContext;
       return idx.start({ issuer: `${customIssuer}`, clientId, version, redirectUri, codeChallenge, codeChallengeMethod })
         .then( idxState => {
           expect(idxState.toPersist.baseUrl).toEqual('http://okta.example.com/oauth2/default');
@@ -86,6 +115,7 @@ describe('idx-js', () => {
     });
 
     it('handles an org AS issuer with a trailing slash', async () => {
+      const { clientId, orgIssuer, codeChallenge, codeChallengeMethod, version, redirectUri } = testContext;
       return idx.start({ issuer: `${orgIssuer}/`, clientId, version, redirectUri, codeChallenge, codeChallengeMethod })
         .then( idxState => {
           expect(idxState.toPersist.baseUrl).toEqual('http://okta.example.com/oauth2');
@@ -93,6 +123,7 @@ describe('idx-js', () => {
     });
 
     it('handles a custom AS issuer with a trailing slash', async () => {
+      const { clientId, customIssuer, codeChallenge, codeChallengeMethod, version, redirectUri } = testContext;
       return idx.start({ issuer: `${customIssuer}/`, clientId, version, redirectUri, codeChallenge, codeChallengeMethod })
         .then( idxState => {
           expect(idxState.toPersist.baseUrl).toEqual('http://okta.example.com/oauth2/default');
@@ -100,6 +131,7 @@ describe('idx-js', () => {
     });
 
     it('rejects if there is no domain or issuer', async () => {
+      const { stateHandle, version } = testContext;
       return idx.start({ stateHandle, version })
         .then( () => {
           fail('expected idx.start to reject when not given a domain');
@@ -110,29 +142,36 @@ describe('idx-js', () => {
     });
 
     it('rejects without a version', async () => {
+      const { stateHandle, domain } = testContext;
       return idx.start({ stateHandle, domain })
         .then( () => {
           fail('expected idx.start to reject when not given a version');
         })
         .catch( err => {
-          expect(fetch).not.toHaveBeenCalled();
-          expect(err).toStrictEqual({ error: 'version is required'});
+          expect(mocked.introspect).not.toHaveBeenCalled();
+          expect(err).toEqual(new Error('version is required'));
         });
     });
 
-    it('does not call introspect with a well formed but bad version', async () => {
+    it('does not call introspect if parser cannot be loaded', async () => {
+      const { stateHandle, domain } = testContext;
+      const error = new Error('Error from parser');
+      mocked.parsersForVersion.mockImplementation(() => {
+        throw error;
+      });
       return idx.start({ stateHandle, domain, version: '999999.9999.9999' })
         .then( () => {
           fail('expected idx.start to reject when not given a wrong version');
         })
         .catch( err => {
-          expect( err ).toEqual( { error: new Error('Unknown api version: 999999.9999.9999.  Use an exact semver version.') });
-          expect( fetch ).not.toHaveBeenCalled();
+          expect( err ).toEqual(new Error('Error from parser'));
+          expect( mocked.introspect ).not.toHaveBeenCalled();
         });
     });
 
     it('returns an idxState when a generic error occurs during introspect', async () => {
-      fetch.mockImplementationOnce( () => Promise.resolve( new Response(JSON.stringify( mockErrorResponse ), { status: 500 }) ) );
+      const { stateHandle, domain, version } = testContext;
+      mocked.introspect.mockRejectedValue(mockErrorResponse);
 
       return idx.start({ domain, stateHandle, version })
         .then( () => {
@@ -140,18 +179,14 @@ describe('idx-js', () => {
         })
         .catch( ( { error } ) => {
           expect(error.details).toBeDefined();
-          expect(error.details.context).toBeDefined();
-          expect(typeof error.details.proceed).toBe('function');
-          expect(error.details.neededToProceed).toEqual([]);
           expect(error.details.rawIdxState).toStrictEqual(mockErrorResponse);
           expect(error.error).toEqual('introspect call failed');
         });
     });
 
     it('returns an idxState when an authenticator error occurs during introspect', async () => {
-      fetch.mockImplementationOnce( () => Promise.resolve(
-        new Response(JSON.stringify( mockAuthenticatorErrorResponse ), { status: 403 }) ),
-      );
+      const { stateHandle, domain, version } = testContext;
+      mocked.introspect.mockRejectedValue(mockAuthenticatorErrorResponse);
 
       return idx.start({ domain, stateHandle, version })
         .then( () => {
@@ -159,24 +194,77 @@ describe('idx-js', () => {
         })
         .catch( ( { error } ) => {
           expect(error.details).toBeDefined();
-          expect(error.details.context).toBeDefined();
-          expect(typeof error.details.proceed).toBe('function');
-          expect(error.details.neededToProceed).toHaveLength(1);
           expect(error.details.rawIdxState).toBeDefined();
           expect(error.error).toEqual('introspect call failed');
         });
     });
 
     it('returns an idxState', async () => {
-      return idx.start({ domain, stateHandle, version })
-        .then( idxState => {
-          expect(idxState).toBeDefined();
-          expect(idxState.context).toBeDefined();
-          expect(typeof idxState.proceed).toBe('function');
-          expect(typeof idxState.actions.cancel).toBe('function');
-          expect(idxState.rawIdxState).toStrictEqual(mockRequestIdentity);
-        });
+      const { stateHandle, domain, version } = testContext;
+      const idxState = await idx.start({ domain, stateHandle, version });
+      expect(idxState).toBeDefined();
+      expect(idxState.toPersist.withCredentials).toBe(undefined);
     });
 
+    it('withCredentials=false option can disable sending credentials on the request', async () => {
+      const { stateHandle, domain, version } = testContext;
+      const idxState = await idx.start({ domain, stateHandle, version, withCredentials: false });
+      expect(idxState).toBeDefined();
+      expect(idxState.toPersist.withCredentials).toBe(false);
+    });
+
+    it('does not call interact if loaded with a stateHandlle', async () => {
+      const { stateHandle, domain, version } = testContext;
+      await idx.start({ domain, stateHandle, version });
+      expect(mocked.interact).not.toHaveBeenCalled();
+    });
+
+    it('does not call interact if loaded with an interactionHandle', async () => {
+      const { interactionHandle, domain, version, clientId, redirectUri, codeChallenge, codeChallengeMethod } = testContext;
+      await idx.start({ domain, interactionHandle, version, clientId, redirectUri, codeChallenge, codeChallengeMethod });
+      expect(mocked.interact).not.toHaveBeenCalled();
+    });
+
+    describe('interact', () => {
+      it('will pass activation token to interact', async () => {
+        const { activationToken, domain, version, clientId, redirectUri, codeChallenge, codeChallengeMethod } = testContext;
+        await idx.start({ domain, activationToken, version, clientId, redirectUri, codeChallenge, codeChallengeMethod });
+        expect(mocked.interact).toHaveBeenCalledWith({
+          activationToken,
+          baseUrl: 'undefined/oauth2',
+          clientId,
+          codeChallenge,
+          codeChallengeMethod,
+          redirectUri
+        });
+      });
+
+      it('will pass recovery token to interact', async () => {
+        const { recoveryToken, domain, version, clientId, redirectUri, codeChallenge, codeChallengeMethod } = testContext;
+        await idx.start({ domain, recoveryToken, version, clientId, redirectUri, codeChallenge, codeChallengeMethod });
+        expect(mocked.interact).toHaveBeenCalledWith({
+          recoveryToken,
+          baseUrl: 'undefined/oauth2',
+          clientId,
+          codeChallenge,
+          codeChallengeMethod,
+          redirectUri
+        });
+      });
+
+      it('will pass withCredentials option to interact', async () => {
+        const { domain, version, clientId, redirectUri, codeChallenge, codeChallengeMethod } = testContext;
+        const withCredentials = false;
+        await idx.start({ domain, withCredentials, version, clientId, redirectUri, codeChallenge, codeChallengeMethod });
+        expect(mocked.interact).toHaveBeenCalledWith({
+          withCredentials,
+          baseUrl: 'undefined/oauth2',
+          clientId,
+          codeChallenge,
+          codeChallengeMethod,
+          redirectUri
+        });
+      });
+    });
   });
 });

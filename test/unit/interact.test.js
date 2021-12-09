@@ -11,7 +11,7 @@
  */
 
 
-import bootstrap from '../../src/bootstrap';
+import interact from '../../src/interact';
 import { HttpClient } from '../../src/client';
 
 jest.mock('cross-fetch');
@@ -28,14 +28,14 @@ const mockConfig = {
   codeChallengeMethod: 'method',
 };
 
-describe('bootstrap', () => {
+describe('interact', () => {
   afterEach(() => {
     HttpClient.interceptors.request.clear();
   });
 
   it('fetches an interaction handle', async () => {
     fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
-    return bootstrap({ ...mockConfig, scope: 'openid email' })
+    return interact({ ...mockConfig, scope: 'openid email' })
       .then( result => {
         expect(result).toEqual('ZZZZZZZINTERACTZZZZZZZZ');
       });
@@ -50,7 +50,7 @@ describe('bootstrap', () => {
       config.headers['X-Okta-User-Agent-Extended'] = 'my-sdk-value';
     });
 
-    return bootstrap({ ...mockConfig })
+    return interact({ ...mockConfig })
       .then( () => {
         expect( fetch.mock.calls.length ).toBe(1);
         expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
@@ -67,13 +67,62 @@ describe('bootstrap', () => {
       });
   });
 
+
+  it('by default, credentials are included', async () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+
+    return interact({ ...mockConfig })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
+        expect( fetch.mock.calls[0][1] ).toEqual( {
+          body: 'client_id=CLIENT_ID&scope=openid%20email&redirect_uri=redirect%3A%2F%2F&code_challenge=foo&code_challenge_method=method&state=undefined',
+          credentials: 'include', // what we are testing
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+          },
+          method: 'POST'
+        });
+      });
+  });
+
+  it('credentials can be ommitted by setting withCredentials to false', async () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+
+    return interact({ ...mockConfig, withCredentials: false })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
+        expect( fetch.mock.calls[0][1] ).toEqual( {
+          body: 'client_id=CLIENT_ID&scope=openid%20email&redirect_uri=redirect%3A%2F%2F&code_challenge=foo&code_challenge_method=method&state=undefined',
+          credentials: 'omit', // what we are testing
+          headers: {
+            'content-type': 'application/x-www-form-urlencoded',
+            'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+          },
+          method: 'POST'
+        });
+      });
+  });
+
   it('passes along `activationToken` if it was provided', () => {
     fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
-    return bootstrap({ ...mockConfig, scope: 'openid email', activationToken: 'xxxACTIVATIONTOKENxxx' })
+    return interact({ ...mockConfig, scope: 'openid email', activationToken: 'xxxACTIVATIONTOKENxxx' })
       .then( () => {
         expect( fetch.mock.calls.length ).toBe(1);
         expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
         expect( fetch.mock.calls[0][1].body ).toEqual('client_id=CLIENT_ID&scope=openid%20email&redirect_uri=redirect%3A%2F%2F&code_challenge=foo&code_challenge_method=method&state=undefined&activation_token=xxxACTIVATIONTOKENxxx');
+      });
+  });
+
+  it('passes along `recoveryToken` if it was provided', () => {
+    fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+    return interact({ ...mockConfig, scope: 'openid email', recoveryToken: 'xxxRECOVERYTOKENxxx' })
+      .then( () => {
+        expect( fetch.mock.calls.length ).toBe(1);
+        expect( fetch.mock.calls[0][0] ).toEqual( 'http://okta.example.com/v1/interact' );
+        expect( fetch.mock.calls[0][1].body ).toEqual('client_id=CLIENT_ID&scope=openid%20email&redirect_uri=redirect%3A%2F%2F&code_challenge=foo&code_challenge_method=method&state=undefined&recovery_token=xxxRECOVERYTOKENxxx');
       });
   });
 });

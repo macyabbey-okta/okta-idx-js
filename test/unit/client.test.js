@@ -20,6 +20,37 @@ const mockInteractResponse = require('../mocks/interact-response');
 const { Response } = jest.requireActual('cross-fetch');
 
 describe('request', () => {
+  describe('credentials', () => {
+    it('is set to "include" by default', async () => {
+      fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+      await request('https://example.com', { body: 'foo=bar' });
+      expect( fetch.mock.calls.length ).toBe(1);
+      expect( fetch.mock.calls[0][0] ).toEqual( 'https://example.com' );
+      expect( fetch.mock.calls[0][1] ).toEqual( {
+        body: 'foo=bar',
+        credentials: 'include',
+        headers: {
+          'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+        },
+        method: 'POST',
+      });
+    });
+    it('can be set by caller', async () => {
+      fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
+      await request('https://example.com', { body: 'foo=bar', credentials: 'omit' });
+      expect( fetch.mock.calls.length ).toBe(1);
+      expect( fetch.mock.calls[0][0] ).toEqual( 'https://example.com' );
+      expect( fetch.mock.calls[0][1] ).toEqual( {
+        body: 'foo=bar',
+        credentials: 'omit',
+        headers: {
+          'X-Okta-User-Agent-Extended': `okta-idx-js/${SDK_VERSION}`,
+        },
+        method: 'POST',
+      });
+    });
+  });
+
   it('does not process interceptors when none are configured', async () => {
     fetch.mockImplementation( () => Promise.resolve( new Response(JSON.stringify( mockInteractResponse )) ) );
 

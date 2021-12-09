@@ -27,7 +27,8 @@ const generateDirectFetch = function generateDirectFetch( { actionDefinition, de
       ...params,
       ...immutableParamsForAction
     });
-    return request(target, { method: actionDefinition.method, headers, body })
+    const credentials = toPersist && toPersist.withCredentials === false ? 'omit' : 'include';
+    return request(target, { method: actionDefinition.method, headers, body, credentials })
       .then( response => {
         const respJson = response.json();
         if (response.ok) {
