@@ -26,6 +26,7 @@ const interact = async function interact({
   state,
   activationToken,
   recoveryToken,
+  clientSecret,
 }) {
 
   const target = `${baseUrl}/v1/interact`;
@@ -42,6 +43,9 @@ const interact = async function interact({
   }
   if (recoveryToken) {
     params.recovery_token = recoveryToken;
+  }
+  if (clientSecret) {
+    params.client_secret = clientSecret;
   }
   const body = Object.entries(params)
     .map( ([param, value]) => `${param}=${encodeURIComponent(value)}` )

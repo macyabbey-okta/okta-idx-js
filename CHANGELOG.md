@@ -1,3 +1,7 @@
+# 0.25.0
+
+- [#79](https://github.com/okta/okta-idx-js/pull/79) Interact accepts clientSecret
+
 # 0.24.0
 
 - [#77](https://github.com/okta/okta-idx-js/pull/77) Adds parameter `withCredentials`. Interact accepts recoveryToken
