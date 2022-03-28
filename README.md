@@ -1,5 +1,7 @@
 # okta-idx-js
 
+> :warning: This module is being deprecated and it's functionality is being added to [Okta AuthJS][okta-auth-js] SDK instead. See the guide: [Using IDX with AuthJS](https://github.com/okta/okta-auth-js/blob/master/docs/idx.md).
+
 [devforum]: https://devforum.okta.com/
 [github-issues]: https://github.com/okta/okta-idx-js/issues
 [github-releases]: https://github.com/okta/okta-idx-js/releases

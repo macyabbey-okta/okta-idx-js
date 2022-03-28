@@ -1,3 +1,8 @@
+# 0.25.1
+
+- [#80](https://github.com/okta/okta-idx-js/pull/80) This module is on a deprecation path. Adds deprecation warnings
+  > this module has been moved to [okta/okta-auth-js](https://github.com/okta/okta-auth-js/blob/master/docs/idx.md)
+
 # 0.25.0
 
 - [#79](https://github.com/okta/okta-idx-js/pull/79) Interact accepts clientSecret

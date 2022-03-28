@@ -45,6 +45,10 @@ const start = async function start({
     withCredentials
   };
 
+  console.warn(
+    `[WARN]: This module has been deprecated and it's functionality has been added to '@okta/okta-auth-js' (https://github.com/okta/okta-auth-js)`
+  );
+
   if ( !domain && !issuer) {
     return Promise.reject({ error: 'issuer is required' });
   }
